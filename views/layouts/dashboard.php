@@ -138,6 +138,12 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link <?= ($currentPage ?? '') === 'users' ? 'active' : '' ?>" href="<?= $basePath ?? '' ?>/users">
+                                <i class="ti ti-users nav-link-icon"></i>
+                                <span class="nav-link-title">User Management</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <hr class="my-3">
                         </li>
                         <li class="nav-item">
@@ -195,7 +201,7 @@
                                         <i class="ti ti-settings me-2"></i> Settings
                                     </a>
                                     <div class="dropdown-divider"></div>
-                                    <a class="dropdown-item text-danger" href="#">
+                                    <a class="dropdown-item text-danger" href="/logout">
                                         <i class="ti ti-logout me-2"></i> Logout
                                     </a>
                                 </div>
@@ -235,7 +241,7 @@
             <!-- Page Body -->
             <div class="page-body">
                 <div class="container-xl">
-                    <?= $this->fetch($pageTemplate, []) ?>
+                    <?= $this->fetch($pageTemplate, $pageData ?? []) ?>
                 </div>
             </div>
 

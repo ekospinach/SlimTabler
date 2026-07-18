@@ -5,6 +5,7 @@ use Slim\Factory\AppFactory;
 use Slim\Views\PhpRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/bootstrap.php';
 
 // Instantiate App
 $app = AppFactory::create();
@@ -26,98 +27,57 @@ $renderer->setAttributes([
 
 // ===== Routes =====
 
-// Home - Landing page
+// Home - redirect to dashboard if logged in, else to login
 $app->get('/', function (Request $request, Response $response) {
-    $response->getBody()->write('
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Slim Framework + Tabler UI</title>
-            <style>
-                * { margin: 0; padding: 0; box-sizing: border-box; }
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    background: #111827; color: #e5e7eb;
-                    display: flex; align-items: center; justify-content: center;
-                    min-height: 100vh; text-align: center;
-                }
-                .container { max-width: 640px; padding: 2rem; }
-                .logo {
-                    width: 80px; height: 80px;
-                    background: linear-gradient(135deg, #066fd1, #4299e1);
-                    border-radius: 20px;
-                    display: inline-flex; align-items: center; justify-content: center;
-                    font-size: 2.5rem; color: #fff; margin-bottom: 1.5rem;
-                }
-                h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
-                .subtitle { color: #9ca3af; font-size: 1.125rem; margin-bottom: 2rem; }
-                .links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
-                .links a {
-                    display: inline-flex; align-items: center; gap: 0.5rem;
-                    padding: 0.75rem 1.5rem; border-radius: 8px;
-                    text-decoration: none; font-weight: 500; transition: all 0.2s;
-                }
-                .btn-primary { background: #066fd1; color: #fff; }
-                .btn-primary:hover { background: #0558a8; transform: translateY(-2px); }
-                .btn-secondary { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; }
-                .btn-secondary:hover { background: #374151; transform: translateY(-2px); }
-                .features {
-                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-                    margin-top: 3rem; text-align: left;
-                }
-                .feature {
-                    background: #1f2937; padding: 1.25rem; border-radius: 10px;
-                    border: 1px solid #374151;
-                }
-                .feature h3 { font-size: 0.875rem; margin-bottom: 0.5rem; color: #066fd1; }
-                .feature p { font-size: 0.8rem; color: #9ca3af; line-height: 1.5; }
-                @media (max-width: 640px) {
-                    .features { grid-template-columns: 1fr; }
-                    h1 { font-size: 1.75rem; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="logo">&#9889;</div>
-                <h1>Slim Framework + Tabler UI</h1>
-                <p class="subtitle">
-                    A powerful starter kit combining the lightweight <strong>Slim Framework</strong>
-                    with the beautiful <strong>Tabler</strong> admin dashboard UI.
-                </p>
-                <div class="links">
-                    <a href="/dashboard" class="btn-primary">Go to Dashboard</a>
-                    <a href="/_setup/download-tabler" class="btn-secondary">Download Tabler Assets</a>
-                    <a href="/hello/world" class="btn-secondary">Hello World</a>
-                </div>
-                <div class="features">
-                    <div class="feature">
-                        <h3>Slim 4</h3>
-                        <p>PSR-7 compliant micro-framework with FastRoute routing, middleware, and DI container support.</p>
-                    </div>
-                    <div class="feature">
-                        <h3>Tabler UI</h3>
-                        <p>Premium Bootstrap-based admin dashboard with 500+ components, dark mode, and responsive design.</p>
-                    </div>
-                    <div class="feature">
-                        <h3>Tooling</h3>
-                        <p>Clockwork profiling, structured logging, CSRF protection, HTTP caching, and PHP-View templating.</p>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-    ');
-    return $response;
+    if (isLoggedIn()) {
+        return $response->withHeader('Location', '/dashboard')->withStatus(302);
+    }
+    return $response->withHeader('Location', '/login')->withStatus(302);
 });
 
-$app->get('/hello/{name}', function (Request $request, Response $response, $args) {
-    $name = $args['name'];
-    $response->getBody()->write("Hello, $name");
-    return $response;
+// ===== Auth Routes =====
+
+$app->get('/login', function (Request $request, Response $response) use ($renderer) {
+    if (isLoggedIn()) {
+        return $response->withHeader('Location', '/dashboard')->withStatus(302);
+    }
+    return $renderer->render($response, '/pages/login.php', ['error' => '']);
 });
+
+$app->post('/login', function (Request $request, Response $response) {
+    ensureUsersTable();
+    $data = (array) $request->getParsedBody();
+    $email = trim($data['email'] ?? '');
+    $password = $data['password'] ?? '';
+
+    $stmt = db()->prepare('SELECT * FROM users WHERE email = ?');
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if (!$user || !password_verify($password, $user['password'])) {
+        return $renderer->render($response, '/pages/login.php', ['error' => 'Invalid email or password.']);
+    }
+
+    $_SESSION['user_id'] = $user['id'];
+    $_SESSION['user_name'] = $user['name'];
+    return $response->withHeader('Location', '/dashboard')->withStatus(302);
+});
+
+$app->get('/logout', function (Request $request, Response $response) {
+    session_destroy();
+    return $response->withHeader('Location', '/login')->withStatus(302);
+});
+
+// ===== Protected Routes (require login) =====
+$app->add(function ($request, $handler) {
+    $path = $request->getUri()->getPath();
+    $public = ['/login', '/hello'];
+    if (isLoggedIn() || in_array($path, $public, true) || strpos($path, '/assets/') === 0) {
+        return $handler->handle($request);
+    }
+    return (new \Slim\Psr7\Response())->withHeader('Location', '/login')->withStatus(302);
+});
+
 
 // ===== Dashboard Routes =====
 
@@ -128,7 +88,7 @@ $app->get('/dashboard', function (Request $request, Response $response) use ($re
         'pageDescription' => 'Welcome back! Here\'s what\'s happening with your project today.',
         'currentPage'     => 'dashboard',
         'pageTemplate' => '/pages/dashboard.php',
-        'data'            => [],
+        'pageData' => [],
     ]);
 });
 
@@ -139,7 +99,7 @@ $app->get('/tables', function (Request $request, Response $response) use ($rende
         'pageDescription' => 'Manage your data with sortable, searchable tables.',
         'currentPage'     => 'tables',
         'pageTemplate' => '/pages/tables.php',
-        'data'            => [],
+        'pageData' => [],
     ]);
 });
 
@@ -150,7 +110,7 @@ $app->get('/blank', function (Request $request, Response $response) use ($render
         'pageDescription' => 'Start building your custom page from this blank template.',
         'currentPage'     => 'blank',
         'pageTemplate' => '/pages/blank.php',
-        'data'            => [],
+        'pageData' => [],
     ]);
 });
 
@@ -254,6 +214,104 @@ $app->get('/_setup/download-tabler', function (Request $request, Response $respo
 
     $response->getBody()->write('<html><head><title>Tabler Download</title><style>body{font-family:sans-serif;max-width:600px;margin:40px auto;line-height:1.6}ul{list-style:none;padding:0}li{padding:4px 0}code{background:#f0f0f0;padding:2px 6px;border-radius:3px}</style></head><body>' . implode("\n", $log) . '</body></html>');
     return $response;
+});
+
+// ===== User Management Routes =====
+
+$app->get('/users', function (Request $request, Response $response) use ($renderer) {
+    ensureUsersTable();
+    $users = db()->query('SELECT id, name, email, created_at FROM users ORDER BY created_at DESC')->fetchAll();
+    return $renderer->render($response, '/layouts/dashboard.php', [
+        'pageTitle'       => 'User Management',
+        'pageIcon'        => 'users',
+        'pageDescription' => 'Manage application users.',
+        'currentPage'     => 'users',
+        'pageTemplate'    => '/pages/users.php',
+        'users'           => $users,
+        'pageData'        => ['users' => $users],
+    ]);
+});
+
+$app->post('/users', function (Request $request, Response $response) use ($renderer) {
+    $data = (array) $request->getParsedBody();
+    $name = trim($data['name'] ?? '');
+    $email = trim($data['email'] ?? '');
+    $password = $data['password'] ?? '';
+
+    if ($name === '' || $email === '' || strlen($password) < 6) {
+        $users = db()->query('SELECT id, name, email, created_at FROM users ORDER BY created_at DESC')->fetchAll();
+        return $renderer->render($response, '/layouts/dashboard.php', [
+            'pageTitle' => 'User Management', 'pageIcon' => 'users',
+            'pageDescription' => 'Manage application users.', 'currentPage' => 'users',
+            'pageTemplate' => '/pages/users.php', 'users' => $users,
+            'formError' => 'Name, valid email, and password (min 6 chars) are required.',
+            'pageData' => ['users' => $users, 'formError' => 'Name, valid email, and password (min 6 chars) are required.'],
+        ]);
+    }
+
+    try {
+        $stmt = db()->prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
+        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT)]);
+    } catch (\PDOException $e) {
+        $users = db()->query('SELECT id, name, email, created_at FROM users ORDER BY created_at DESC')->fetchAll();
+        return $renderer->render($response, '/layouts/dashboard.php', [
+            'pageTitle' => 'User Management', 'pageIcon' => 'users',
+            'pageDescription' => 'Manage application users.', 'currentPage' => 'users',
+            'pageTemplate' => '/pages/users.php', 'users' => $users,
+            'formError' => 'Email already registered.',
+            'pageData' => ['users' => $users, 'formError' => 'Email already registered.'],
+        ]);
+    }
+    return $response->withHeader('Location', '/users')->withStatus(302);
+});
+
+$app->get('/users/{id}/edit', function (Request $request, Response $response, $args) use ($renderer) {
+    $stmt = db()->prepare('SELECT id, name, email FROM users WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    $user = $stmt->fetch();
+    if (!$user) {
+        return $response->withHeader('Location', '/users')->withStatus(302);
+    }
+    return $renderer->render($response, '/layouts/dashboard.php', [
+        'pageTitle' => 'Edit User', 'pageIcon' => 'user-edit',
+        'pageDescription' => 'Edit user details.', 'currentPage' => 'users',
+        'pageTemplate' => '/pages/user-form.php', 'user' => $user,
+        'pageData' => ['user' => $user],
+    ]);
+});
+
+$app->post('/users/{id}/update', function (Request $request, Response $response, $args) {
+    $data = (array) $request->getParsedBody();
+    $name = trim($data['name'] ?? '');
+    $email = trim($data['email'] ?? '');
+    $password = $data['password'] ?? '';
+
+    if ($name === '' || $email === '') {
+        $user = ['id' => $args['id'], 'name' => $name, 'email' => $email];
+        return $renderer->render($response, '/layouts/dashboard.php', [
+            'pageTitle' => 'Edit User', 'pageIcon' => 'user-edit',
+            'pageDescription' => 'Edit user details.', 'currentPage' => 'users',
+            'pageTemplate' => '/pages/user-form.php',
+            'user' => $user,
+            'formError' => 'Name and email are required.',
+            'pageData' => ['user' => $user, 'formError' => 'Name and email are required.'],
+        ]);
+    }
+
+    if ($password !== '') {
+        $stmt = db()->prepare('UPDATE users SET name = ?, email = ?, password = ? WHERE id = ?');
+        $stmt->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), $args['id']]);
+    } else {
+        $stmt = db()->prepare('UPDATE users SET name = ?, email = ? WHERE id = ?');
+        $stmt->execute([$name, $email, $args['id']]);
+    }
+    return $response->withHeader('Location', '/users')->withStatus(302);
+});
+
+$app->post('/users/{id}/delete', function (Request $request, Response $response, $args) {
+    $stmt = db()->prepare('DELETE FROM users WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    return $response->withHeader('Location', '/users')->withStatus(302);
 });
 
 // ===== Static Asset Handler =====
