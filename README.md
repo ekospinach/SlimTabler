@@ -1,171 +1,78 @@
-# Slim Framework + Tabler UI Dashboard
+# Slim Framework + Tabler UI Dashboard (SlimTabler)
 
 [![Build Status](https://github.com/slimphp/Slim/actions/workflows/tests.yml/badge.svg?branch=4.x)](https://github.com/slimphp/Slim/actions/workflows/tests.yml?query=branch:4.x)
 [![Coverage Status](https://coveralls.io/repos/github/slimphp/Slim/badge.svg?branch=4.x)](https://coveralls.io/github/slimphp/Slim?branch=4.x)
-[![Total Downloads](https://poser.pugx.org/slim/slim/downloads)](https://packagist.org/packages/slim/slim)
 [![License](https://poser.pugx.org/slim/slim/license)](https://packagist.org/packages/slim/slim)
 
-Slim is a PHP micro-framework that helps you quickly write simple yet powerful web applications and APIs.
+**SlimTabler** is a PHP web application built on the [Slim 4 micro-framework](https://www.slimframework.com) (v`4.15.1`) and styled with the [Tabler UI](https://tabler.io) admin dashboard toolkit. It provides a login-protected dashboard with user management, static asset serving, structured request logging, and request profiling.
 
-## Installation
+> This repository is a fork of [`slimphp/Slim`](https://github.com/slimphp/Slim) that layers a Tabler-powered dashboard application on top of the Slim framework source. The `Slim/` directory is the upstream framework; the application lives in `public/` and `views/`.
 
-It's recommended that you use [Composer](https://getcomposer.org/) to install Slim.
+## Features
 
-```bash
-composer require slim/slim
-```
+- 🔐 **Authentication** — session-based login/logout with `password_hash` / `password_verify`.
+- 👥 **User management** — full CRUD over a `users` table with server-side validation.
+- 🛡️ **CSRF protection** — session token validation on `POST` requests (returns `403` on mismatch).
+- 📊 **Dashboard UI** — Tabler-based layout with sidebar, navbar, and pages (`/dashboard`, `/tables`, `/blank`).
+- 🎨 **Tabler assets** — local assets under `public/assets/tabler/` with automatic jsDelivr CDN fallback.
+- 📈 **Observability** — structured JSON request logs with correlation IDs (`X-Request-Id`) and [Clockwork](https://underground.works/clockwork) request profiling.
+- 🧩 **Custom middleware** — `Slim\Middleware\StructuredLoggingMiddleware`, plus a `Slim\Logger` and `Slim\ResponseEmitter`.
 
-This will install Slim and all required dependencies. Slim requires PHP 7.4 or newer.
+## Requirements
 
-## Choose a PSR-7 Implementation & ServerRequest Creator
+- PHP `7.4`, `8.0` – `8.5`
+- Composer
+- MySQL / MariaDB (PDO `mysql`)
+- PHP extensions: `ext-json`, `ext-pdo`, `ext-simplexml`
 
-Before you can get up and running with Slim you will need to choose a PSR-7 implementation that best fits your application. A few notable ones:
-- [Slim-Psr7](https://github.com/slimphp/Slim-Psr7) - This is the Slim Framework PSR-7 implementation
-- [httpsoft/http-message](https://github.com/httpsoft/http-message) & [httpsoft/http-server-request](https://github.com/httpsoft/http-server-request) - This is the fastest, strictest and most lightweight implementation available
-- [Nyholm/psr7](https://github.com/Nyholm/psr7) & [Nyholm/psr7-server](https://github.com/Nyholm/psr7-server) - Performance is almost the same as the HttpSoft implementation
-- [Guzzle/psr7](https://github.com/guzzle/psr7) - This is the implementation used by the Guzzle Client, featuring extra functionality for stream and file handling
-- [laminas-diactoros](https://github.com/laminas/laminas-diactoros) - This is the Laminas (Zend) PSR-7 implementation
-
-
-## Slim-Http Decorators
-
-[Slim-Http](https://github.com/slimphp/Slim-Http) is a set of decorators for any PSR-7 implementation that we recommend is used with Slim Framework.
-To install the Slim-Http library simply run the following command:
+## Quick Start
 
 ```bash
-composer require slim/http
-```
-
-The `ServerRequest` and `Response` object decorators are automatically detected and applied by the internal factories. If you have installed Slim-Http and wish to turn off automatic object decoration then you can use the following statements:
-```php
-<?php
-
-use Slim\Factory\AppFactory;
-use Slim\Factory\ServerRequestCreatorFactory;
-
-AppFactory::setSlimHttpDecoratorsAutomaticDetection(false);
-ServerRequestCreatorFactory::setSlimHttpDecoratorsAutomaticDetection(false);
-
-$app = AppFactory::create();
-
-// ...
-```
-
-## Hello World using AppFactory with PSR-7 auto-detection
-In order for auto-detection to work and enable you to use `AppFactory::create()` and `App::run()` without having to manually create a `ServerRequest` you need to install one of the following implementations:
-- [Slim-Psr7](https://github.com/slimphp/Slim-Psr7) - Install using `composer require slim/psr7`
-- [httpsoft/http-message](https://github.com/httpsoft/http-message) & [httpsoft/http-server-request](https://github.com/httpsoft/http-server-request) - Install using:
-`composer require httpsoft/http-message httpsoft/http-server-request`
-- [Nyholm/psr7](https://github.com/Nyholm/psr7) & [Nyholm/psr7-server](https://github.com/Nyholm/psr7-server) - Install using `composer require nyholm/psr7 nyholm/psr7-server`
-- [Guzzle/psr7](https://github.com/guzzle/psr7) - Install using `composer require guzzlehttp/psr7`
-- [laminas-diactoros](https://github.com/laminas/laminas-diactoros) - Install using `composer require laminas/laminas-diactoros`
-
-Then create file _public/index.php_.
-
-```php
-<?php
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Factory\AppFactory;
-
-require __DIR__ . '/../vendor/autoload.php';
-
-// Instantiate App
-$app = AppFactory::create();
-
-// Add error middleware
-$app->addErrorMiddleware(true, true, true);
-
-// Add routes
-$app->get('/', function (Request $request, Response $response) {
-    $response->getBody()->write('<a href="/hello/world">Try /hello/world</a>');
-    return $response;
-});
-
-$app->get('/hello/{name}', function (Request $request, Response $response, $args) {
-    $name = $args['name'];
-    $response->getBody()->write("Hello, $name");
-    return $response;
-});
-
-$app->run();
-```
-
-You may quickly test this using the built-in PHP server:
-```bash
-php -S localhost:8000 -t public
-```
-
-Going to http://localhost:8000/hello/world will now display "Hello, world".
-
-For more information on how to configure your web server, see the [Documentation](https://www.slimframework.com/docs/v4/start/web-servers.html).
-
-## Tests
-To execute the test suite, you'll need to install all development dependencies.
-
-```bash
-git clone https://github.com/slimphp/Slim
+# 1. Install dependencies
 composer install
-composer test
+
+# 2. Create the database (credentials are in public/bootstrap.php: root / empty password, db "slim")
+mysql -e "CREATE DATABASE slim CHARACTER SET utf8mb4;"
+
+# 3. Run the built-in server
+php -S localhost:8000 -t public
+
+# 4. Fetch Tabler UI assets (one time, no auth required)
+#    Visit: http://localhost:8000/_setup/download-tabler
 ```
 
-## Contributing
+Then open **http://localhost:8000** — you'll be redirected to `/login`. Create your first user via the MySQL CLI (see the [Getting Started](docs/getting-started.md#5-create-your-first-user) guide), then log in.
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+## Documentation
 
-## Learn More
+Full documentation lives in the [`docs/`](docs/README.md) folder:
 
-Learn more at these links:
+| Page | Description |
+|------|-------------|
+| [docs/README.md](docs/README.md) | Documentation home / table of contents. |
+| [docs/getting-started.md](docs/getting-started.md) | Installation, database setup, running the app, asset download. |
+| [docs/architecture.md](docs/architecture.md) | Request lifecycle, middleware stack, bootstrap helpers, custom Slim classes. |
+| [docs/routes-and-features.md](docs/routes-and-features.md) | Full route reference and feature descriptions. |
+| [docs/views-and-templating.md](docs/views-and-templating.md) | `slim/php-view` layout system and page variable contract. |
+| [docs/security.md](docs/security.md) | CSRF, authentication, path-traversal protection, password hashing, validation. |
+| [docs/testing.md](docs/testing.md) | Running the test suite and static analysis tools. |
 
-- [Website](https://www.slimframework.com)
-- [Documentation](https://www.slimframework.com/docs/v4/start/installation.html)
-- [Slack](https://slimphp.slack.com)
-- [Support Forum](https://discourse.slimframework.com)
-- [Twitter](https://twitter.com/slimphp)
-- [Resources](https://github.com/xssc/awesome-slim)
+Additional project docs:
 
-## Security
+- [OBSERVABILITY.md](OBSERVABILITY.md) — structured logging, correlation IDs, Clockwork profiling.
+- [REFACTORING.md](REFACTORING.md) — history of application refactoring sessions.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution guidelines.
+- [SECURITY.md](SECURITY.md) — how to report security vulnerabilities.
+- [UPGRADING.md](UPGRADING.md) — upgrade notes (upstream Slim).
 
-If you discover security related issues, please email security@slimframework.com instead of using the issue tracker.
+## Running Tests & Quality Tools
 
-## For enterprise
+```bash
+composer test          # phpunit + phpcs + phpstan + psalm
+```
 
-Available as part of the Tidelift Subscription.
-
-The maintainers of `Slim` and thousands of other packages are working with Tidelift to deliver commercial support and maintenance for the open source dependencies you use to build your applications. Save time, reduce risk, and improve code health, while paying the maintainers of the exact dependencies you use. [Learn more.](https://tidelift.com/subscription/pkg/packagist-slim-slim?utm_source=packagist-slim-slim&utm_medium=referral&utm_campaign=enterprise&utm_term=repo)
-
-## Contributors
-
-### Code Contributors
-
-This project exists thanks to all the people who contribute. [Contribute](CONTRIBUTING.md).
-<a href="https://github.com/slimphp/Slim/graphs/contributors">
-    <img src="https://opencollective.com/slimphp/contributors.svg?width=890&button=false" />
-</a>
-
-### Financial Contributors
-
-Become a financial contributor and help us sustain our community. [Contribute](https://opencollective.com/slimphp/contribute)
-
-#### Individuals
-
-<a href="https://opencollective.com/slimphp"><img src="https://opencollective.com/slimphp/individuals.svg?width=890"></a>
-
-#### Organizations
-
-Support this project with your organization. Your logo will show up here with a link to your website. [Contribute](https://opencollective.com/slimphp/contribute)
-
-<a href="https://opencollective.com/slimphp/organization/0/website"><img src="https://opencollective.com/slimphp/organization/0/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/1/website"><img src="https://opencollective.com/slimphp/organization/1/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/2/website"><img src="https://opencollective.com/slimphp/organization/2/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/3/website"><img src="https://opencollective.com/slimphp/organization/3/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/4/website"><img src="https://opencollective.com/slimphp/organization/4/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/5/website"><img src="https://opencollective.com/slimphp/organization/5/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/6/website"><img src="https://opencollective.com/slimphp/organization/6/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/7/website"><img src="https://opencollective.com/slimphp/organization/7/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/8/website"><img src="https://opencollective.com/slimphp/organization/8/avatar.svg"></a>
-<a href="https://opencollective.com/slimphp/organization/9/website"><img src="https://opencollective.com/slimphp/organization/9/avatar.svg"></a>
+See [docs/testing.md](docs/testing.md) for details. Note: the test suite currently covers the `Slim/` framework classes; the dashboard application code is not yet covered by automated tests.
 
 ## License
 
-The Slim Framework is licensed under the MIT license. See [License File](LICENSE.md) for more information.
+The Slim Framework and this dashboard application are licensed under the MIT license. See [LICENSE.md](LICENSE.md) for more information.
