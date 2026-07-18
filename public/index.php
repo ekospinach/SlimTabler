@@ -242,4 +242,19 @@ $app->get('/_setup/download-tabler', function (Request $request, Response $respo
     return $response;
 });
 
+// ===== Static Asset Handler =====
+// Serves files from public/assets when the web server docroot is the project
+// root instead of public/. Path is locked inside public/assets (no traversal).
+$app->get('/assets/{file:.*}', function (Request $request, Response $response, $args) {
+    $rel = preg_replace('#[^a-zA-Z0-9_./-]#', '', $args['file']);
+    $path = __DIR__ . '/assets/' . $rel;
+    if (!is_file($path) || strpos(realpath($path), realpath(__DIR__ . '/assets')) !== 0) {
+        return $response->withStatus(404);
+    }
+    $mime = mime_content_type($path) ?: 'application/octet-stream';
+    $response->getBody()->write(file_get_contents($path));
+    return $response->withHeader('Content-Type', $mime)
+        ->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
 $app->run();
