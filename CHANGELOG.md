@@ -4,11 +4,28 @@
 
 ### Fixed
 
+- Fix CSRF middleware to read raw body before parsing
+- Add missing `PhpRenderer` import in `routes.php`
+
 ### Added
+
+- Add comprehensive helper functions in `bootstrap.php`: `getUsers()`, `getUserById()`, `getUserByEmail()`, `getCurrentUserId()`, `getCurrentUserName()`, `requireAuth()`, `redirect()`, `setFlash()`, `getFlash()`, `hasFlash()`
+- Add CSRF protection middleware
+- Add `renderDashboard()` and `renderDashboardWithError()` helper functions
+- Add flash message support for success/error notifications
 
 ### Changed
 
+- **Refactor**: Extract route definitions from `index.php` to dedicated `routes.php` file for better organization
+- **Refactor**: Simplify `index.php` to only contain app setup, middleware configuration, and route inclusion
+- **Refactor**: Reduce code duplication in dashboard route handlers using helper functions
+- **Refactor**: Clean up download-tabler route (extract nested function, use data-driven approach)
+- **Refactor**: Add proper input validation with email filter validation
+- **Refactor**: Add `/setup/` to public routes in auth middleware
+
 ### Removed
+
+- Remove duplicated dashboard rendering logic from route handlers (refactored into reusable helpers)
 
 ## 4.15.2 - 2026-05-22
 
