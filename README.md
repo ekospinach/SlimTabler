@@ -1,4 +1,4 @@
-# Slim Framework
+# Slim Framework + Tabler UI Dashboard
 
 [![Build Status](https://github.com/slimphp/Slim/actions/workflows/tests.yml/badge.svg?branch=4.x)](https://github.com/slimphp/Slim/actions/workflows/tests.yml?query=branch:4.x)
 [![Coverage Status](https://coveralls.io/repos/github/slimphp/Slim/badge.svg?branch=4.x)](https://coveralls.io/github/slimphp/Slim?branch=4.x)
