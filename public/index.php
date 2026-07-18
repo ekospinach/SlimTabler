@@ -2,6 +2,7 @@
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
+use Slim\Views\PhpRenderer;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -17,9 +18,98 @@ $app->add(new \Clockwork\Support\Slim\ClockworkMiddleware($app, __DIR__ . '/../s
 // Add Structured Logging middleware for correlation ID & JSON event logging
 $app->add(new \Slim\Middleware\StructuredLoggingMiddleware());
 
-// Add routes
+// Create PHP-View renderer
+$renderer = new PhpRenderer(__DIR__ . '/../views');
+$renderer->setAttributes([
+    'basePath' => '',
+]);
+
+// ===== Routes =====
+
+// Home - Landing page
 $app->get('/', function (Request $request, Response $response) {
-    $response->getBody()->write('<a href="/hello/world">Try /hello/world</a>');
+    $response->getBody()->write('
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Slim Framework + Tabler UI</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    background: #111827; color: #e5e7eb;
+                    display: flex; align-items: center; justify-content: center;
+                    min-height: 100vh; text-align: center;
+                }
+                .container { max-width: 640px; padding: 2rem; }
+                .logo {
+                    width: 80px; height: 80px;
+                    background: linear-gradient(135deg, #066fd1, #4299e1);
+                    border-radius: 20px;
+                    display: inline-flex; align-items: center; justify-content: center;
+                    font-size: 2.5rem; color: #fff; margin-bottom: 1.5rem;
+                }
+                h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+                .subtitle { color: #9ca3af; font-size: 1.125rem; margin-bottom: 2rem; }
+                .links { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+                .links a {
+                    display: inline-flex; align-items: center; gap: 0.5rem;
+                    padding: 0.75rem 1.5rem; border-radius: 8px;
+                    text-decoration: none; font-weight: 500; transition: all 0.2s;
+                }
+                .btn-primary { background: #066fd1; color: #fff; }
+                .btn-primary:hover { background: #0558a8; transform: translateY(-2px); }
+                .btn-secondary { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; }
+                .btn-secondary:hover { background: #374151; transform: translateY(-2px); }
+                .features {
+                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+                    margin-top: 3rem; text-align: left;
+                }
+                .feature {
+                    background: #1f2937; padding: 1.25rem; border-radius: 10px;
+                    border: 1px solid #374151;
+                }
+                .feature h3 { font-size: 0.875rem; margin-bottom: 0.5rem; color: #066fd1; }
+                .feature p { font-size: 0.8rem; color: #9ca3af; line-height: 1.5; }
+                @media (max-width: 640px) {
+                    .features { grid-template-columns: 1fr; }
+                    h1 { font-size: 1.75rem; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="logo">&#9889;</div>
+                <h1>Slim Framework + Tabler UI</h1>
+                <p class="subtitle">
+                    A powerful starter kit combining the lightweight <strong>Slim Framework</strong>
+                    with the beautiful <strong>Tabler</strong> admin dashboard UI.
+                </p>
+                <div class="links">
+                    <a href="/dashboard" class="btn-primary">Go to Dashboard</a>
+                    <a href="/_setup/download-tabler" class="btn-secondary">Download Tabler Assets</a>
+                    <a href="/hello/world" class="btn-secondary">Hello World</a>
+                </div>
+                <div class="features">
+                    <div class="feature">
+                        <h3>Slim 4</h3>
+                        <p>PSR-7 compliant micro-framework with FastRoute routing, middleware, and DI container support.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Tabler UI</h3>
+                        <p>Premium Bootstrap-based admin dashboard with 500+ components, dark mode, and responsive design.</p>
+                    </div>
+                    <div class="feature">
+                        <h3>Tooling</h3>
+                        <p>Clockwork profiling, structured logging, CSRF protection, HTTP caching, and PHP-View templating.</p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+    ');
     return $response;
 });
 
@@ -29,7 +119,42 @@ $app->get('/hello/{name}', function (Request $request, Response $response, $args
     return $response;
 });
 
-// ===== Tabler Asset Downloader =====
+// ===== Dashboard Routes =====
+
+$app->get('/dashboard', function (Request $request, Response $response) use ($renderer) {
+    return $renderer->render($response, '/layouts/dashboard.php', [
+        'pageTitle'       => 'Dashboard',
+        'pageIcon'        => 'dashboard',
+        'pageDescription' => 'Welcome back! Here\'s what\'s happening with your project today.',
+        'currentPage'     => 'dashboard',
+        'template'        => '/pages/dashboard.php',
+        'data'            => [],
+    ]);
+});
+
+$app->get('/tables', function (Request $request, Response $response) use ($renderer) {
+    return $renderer->render($response, '/layouts/dashboard.php', [
+        'pageTitle'       => 'Tables',
+        'pageIcon'        => 'table',
+        'pageDescription' => 'Manage your data with sortable, searchable tables.',
+        'currentPage'     => 'tables',
+        'template'        => '/pages/tables.php',
+        'data'            => [],
+    ]);
+});
+
+$app->get('/blank', function (Request $request, Response $response) use ($renderer) {
+    return $renderer->render($response, '/layouts/dashboard.php', [
+        'pageTitle'       => 'Blank Page',
+        'pageIcon'        => 'file-description',
+        'pageDescription' => 'Start building your custom page from this blank template.',
+        'currentPage'     => 'blank',
+        'template'        => '/pages/blank.php',
+        'data'            => [],
+    ]);
+});
+
+// ===== Tabler Asset Downloader Route =====
 // Access /_setup/download-tabler to download all Tabler UI assets locally
 $app->get('/_setup/download-tabler', function (Request $request, Response $response) {
     $baseDir = __DIR__ . '/assets/tabler';

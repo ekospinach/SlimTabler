@@ -5,10 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($pageTitle ?? 'Slim Dashboard') ?> — Tabler & Slim</title>
 
-    <!-- Tabler Core CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css">
-    <!-- Tabler Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+    <!-- Tabler Core CSS (local, fallback to CDN) -->
+    <link rel="stylesheet" href="/assets/tabler/css/tabler.min.css" id="tabler-core-css">
+    <!-- Tabler Icons (local, fallback to CDN) -->
+    <link rel="stylesheet" href="/assets/tabler/css/tabler-icons.min.css" id="tabler-icons-css">
+    <script>
+    // Robust CSS fallback: if local stylesheets fail to load, fall back to CDN
+    (function() {
+        var sheets = document.styleSheets;
+        var tablerLoaded = false;
+        var iconsLoaded = false;
+        for (var i = 0; i < sheets.length; i++) {
+            var href = sheets[i].href || '';
+            if (href.indexOf('tabler.min.css') > -1) tablerLoaded = true;
+            if (href.indexOf('tabler-icons.min.css') > -1) iconsLoaded = true;
+        }
+        if (!tablerLoaded) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css';
+            document.head.appendChild(link);
+        }
+        if (!iconsLoaded) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css';
+            document.head.appendChild(link);
+        }
+    })();
+    </script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -294,7 +319,24 @@
         </div>
     </div>
 
-    <!-- Tabler Core JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    <!-- Tabler Core JS (local, fallback to CDN) -->
+    <script src="/assets/tabler/js/tabler.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js'"></script>
+    <script>
+    // Ensure Tabler JS is loaded; if local failed, it will already have fallen back via onerror.
+    // This also re-triggers any Tabler initialization after CDN fallback loads.
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.tabler === 'undefined' && typeof $ === 'undefined') {
+            var script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js';
+            script.onload = function() {
+                // Re-initialize Tabler components if needed
+                if (window.tabler && window.tabler.core) {
+                    window.tabler.core.init();
+                }
+            };
+            document.body.appendChild(script);
+        }
+    });
+    </script>
 </body>
 </html>
