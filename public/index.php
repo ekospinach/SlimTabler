@@ -234,6 +234,20 @@ $app->get('/_setup/download-tabler', function (Request $request, Response $respo
     }
     $log[] = '</ul>';
 
+    // Tabler Icons webfont files (referenced relatively by tabler-icons.min.css)
+    $log[] = '<h4>Tabler Icons Fonts</h4><ul>';
+    $iconFonts = [
+        'fonts/tabler-icons.woff2',
+        'fonts/tabler-icons.woff',
+        'fonts/tabler-icons.ttf',
+    ];
+    foreach ($iconFonts as $file) {
+        $url = $iconsBaseUrl . $file;
+        $localPath = $baseDir . '/css/' . $file;
+        downloadFile($url, $localPath, $log);
+    }
+    $log[] = '</ul>';
+
     $log[] = '<hr><p><strong>✅ Download complete!</strong></p>';
     $log[] = '<p>Assets are now in: <code>public/assets/tabler/</code></p>';
     $log[] = '<p><a href="/dashboard">Go to Dashboard</a></p>';
