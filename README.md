@@ -75,4 +75,4 @@ See [docs/testing.md](docs/testing.md) for details. Note: the test suite current
 
 ## License
 
-The Slim Framework and this dashboard application are licensed under the MIT license. See [LICENSE.md](LICENSE.md) for more information.
+The Slim Framework is licensed under the MIT license. See [License File](LICENSE.md) for more information.
