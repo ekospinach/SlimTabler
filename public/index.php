@@ -127,7 +127,7 @@ $app->get('/dashboard', function (Request $request, Response $response) use ($re
         'pageIcon'        => 'dashboard',
         'pageDescription' => 'Welcome back! Here\'s what\'s happening with your project today.',
         'currentPage'     => 'dashboard',
-        'template'        => '/pages/dashboard.php',
+        'pageTemplate' => '/pages/dashboard.php',
         'data'            => [],
     ]);
 });
@@ -138,7 +138,7 @@ $app->get('/tables', function (Request $request, Response $response) use ($rende
         'pageIcon'        => 'table',
         'pageDescription' => 'Manage your data with sortable, searchable tables.',
         'currentPage'     => 'tables',
-        'template'        => '/pages/tables.php',
+        'pageTemplate' => '/pages/tables.php',
         'data'            => [],
     ]);
 });
@@ -149,7 +149,7 @@ $app->get('/blank', function (Request $request, Response $response) use ($render
         'pageIcon'        => 'file-description',
         'pageDescription' => 'Start building your custom page from this blank template.',
         'currentPage'     => 'blank',
-        'template'        => '/pages/blank.php',
+        'pageTemplate' => '/pages/blank.php',
         'data'            => [],
     ]);
 });

@@ -235,7 +235,7 @@
             <!-- Page Body -->
             <div class="page-body">
                 <div class="container-xl">
-                    <?= $this->fetch($template, $data) ?>
+                    <?= $this->fetch($pageTemplate, []) ?>
                 </div>
             </div>
 
